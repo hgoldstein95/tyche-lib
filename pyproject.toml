@@ -1,0 +1,21 @@
+[project]
+name = "tyche_hgoldstein95"
+version = "0.0.1"
+authors = [
+  { name="Harrison Goldstein", email="hgoldstein95@gmail.com" },
+]
+description = "A python library for use with the Tyche VSCode extension."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/hgoldstein95/tyche-lib"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"	

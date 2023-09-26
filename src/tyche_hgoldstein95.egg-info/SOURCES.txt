@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+src/tyche_hgoldstein95/__init__.py
+src/tyche_hgoldstein95/tyche.py
+src/tyche_hgoldstein95.egg-info/PKG-INFO
+src/tyche_hgoldstein95.egg-info/SOURCES.txt
+src/tyche_hgoldstein95.egg-info/dependency_links.txt
+src/tyche_hgoldstein95.egg-info/top_level.txt
