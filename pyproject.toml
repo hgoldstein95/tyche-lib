@@ -1,5 +1,5 @@
 [project]
-name = "tyche_hgoldstein95"
+name = "tyche"
 version = "0.0.1"
 authors = [
   { name="Harrison Goldstein", email="hgoldstein95@gmail.com" },
@@ -12,10 +12,13 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "coverage"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/hgoldstein95/tyche-lib"
 
 [build-system]
 requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"	
+build-backend = "setuptools.build_meta"

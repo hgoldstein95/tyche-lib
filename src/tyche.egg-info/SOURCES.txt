@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+src/tyche/__init__.py
+src/tyche/tyche.py
+src/tyche.egg-info/PKG-INFO
+src/tyche.egg-info/SOURCES.txt
+src/tyche.egg-info/dependency_links.txt
+src/tyche.egg-info/requires.txt
+src/tyche.egg-info/top_level.txt

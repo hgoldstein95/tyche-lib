@@ -1,5 +1,5 @@
 Metadata-Version: 2.1
-Name: tyche-hgoldstein95
+Name: tyche
 Version: 0.0.1
 Summary: A python library for use with the Tyche VSCode extension.
 Author-email: Harrison Goldstein <hgoldstein95@gmail.com>
@@ -10,5 +10,6 @@ Classifier: Operating System :: OS Independent
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: coverage
 
 # tyche-lib

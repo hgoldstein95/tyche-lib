@@ -13,7 +13,7 @@ def features_for_value(value, feature_type):
 
 
 def setup():
-    cov = coverage.Coverage(omit=["tyche.py", "hypothesis/*"])
+    cov = coverage.Coverage(omit=["tyche.py", "**/hypothesis/*", "**/python/*"])
     cov.start()
     return cov
 
@@ -34,6 +34,8 @@ def analyze(f, cov):
     cov_report = []
     for file in cov.get_data().measured_files():
         (_, executable, missing, _) = cov.analysis(file)
+        if len(executable) == 0:
+            continue
         cov_report.append((file, {
             "percentage": (len(executable) - len(missing)) / len(executable),
             "hitLines": [i for i in executable if i not in missing],
