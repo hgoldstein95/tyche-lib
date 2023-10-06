@@ -1,1 +1,1 @@
-# tyche-lib
+# Tyche Shim for Hypothesis
