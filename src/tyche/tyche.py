@@ -1,5 +1,6 @@
 import json
 import pprint
+import traceback
 import coverage
 
 global features
@@ -28,7 +29,21 @@ def analyze(f, cov):
 
     f.hypothesis.inner_test = new_inner
 
-    f()
+    try:
+        f()
+    except AssertionError:
+        return json.dumps({
+            "type": "failure",
+            "counterExample": {
+                "item": str(ls[-1]),
+                "features": {},
+                "bucketings": {}
+            },
+            "message": traceback.format_exc()
+        })
+    except Exception:
+        return json.dumps({"type": "error", "message": traceback.format_exc()})
+
     cov.stop()
 
     cov_report = []
