@@ -1,80 +1,62 @@
 import json
-import pprint
-import traceback
-import coverage
+import os
+import time
+import hypothesis
+import websocket
 
-global features
-features = {}
-
-
-def features_for_value(value, feature_type):
-    dicts = [(fname, f) for ty, feats in features.items() for fname, f in feats.items()
-             if isinstance(value, ty) and type(f(value)) == feature_type]
-    return dict(dicts)
+PORT = 8181
+OUTPUT_FILE = lambda property: f".tyche/{property}.jsonl"
 
 
-def setup():
-    cov = coverage.Coverage(omit=["tyche.py", "**/hypothesis/*", "**/python/*"])
-    cov.start()
-    return cov
+def visualize(write_to_websocket=True, write_to_file=False):
 
+    def decorator(f):
 
-def analyze(f, cov):
-    old_inner = f.hypothesis.inner_test
-    ls = []
+        def wrapper(*args, **kwargs):
+            global queue
+            global last_flush
 
-    def new_inner(*args, **kwargs):
-        ls.append(kwargs)
-        old_inner(*args, **kwargs)
+            queue = []
+            last_flush = time.time()
 
-    f.hypothesis.inner_test = new_inner
+            # Flush queue to file, websocket, or both
+            def flush():
+                global queue
+                global last_flush
 
-    try:
-        f()
-    except AssertionError:
-        return json.dumps({
-            "type": "failure",
-            "counterExample": {
-                "item": str(ls[-1]),
-                "features": {},
-                "bucketings": {}
-            },
-            "message": traceback.format_exc()
-        })
-    except Exception:
-        return json.dumps({"type": "error", "message": traceback.format_exc()})
+                result = "\n".join(json.dumps(line) for line in queue) + "\n"
 
-    cov.stop()
+                if write_to_websocket:
+                    ws = websocket.create_connection(f"ws://localhost:{PORT}")
+                    ws.send(result)
+                    ws.close()
 
-    cov_report = []
-    for file in cov.get_data().measured_files():
-        (_, executable, missing, _) = cov.analysis(file)
-        if len(executable) == 0:
-            continue
-        cov_report.append((file, {
-            "percentage": (len(executable) - len(missing)) / len(executable),
-            "hitLines": [i for i in executable if i not in missing],
-            "missedLines": missing,
-        }))
+                if write_to_file:
+                    fname = OUTPUT_FILE(
+                        f.__name__) if callable(OUTPUT_FILE) else OUTPUT_FILE
+                    os.makedirs(os.path.dirname(fname), exist_ok=True)
+                    with open(fname, "a") as handle:
+                        handle.write(result)
 
-    return json.dumps({
-        "coverage":
-        dict(cov_report),
-        "samples": [{
-            "item":
-            pprint.pformat(list(l.values())[0], width=50, compact=True)
-            if len(l) == 1 else pprint.pformat(l, width=50, compact=True),
-            "features":
-            dict([(f"{k}_{feature}", f(v)) for k, v in l.items()
-                  for feature, f in features_for_value(v, int).items()]),
-            "bucketings":
-            dict([(f"{k}_{bucketing}", f(v)) for k, v in l.items()
-                  for bucketing, f in features_for_value(v, str).items()] +
-                 [(f"{k}_{bucketing}", str(f(v))) for k, v in l.items()
-                  for bucketing, f in features_for_value(v, bool).items()]),
-        } for l in ls]
-    })
+                last_flush = time.time()
+                queue = []
 
+            # Add a test case to the queue and potentially flush
+            def handle_test_case(test_case):
+                global queue
+                global last_unflushed
 
-def visualize(f, cov):
-    print(analyze(f, cov))
+                queue.append(test_case)
+                if time.time() - last_flush > 1:
+                    flush()
+
+            hypothesis.internal.observability.TESTCASE_CALLBACKS.append(  # type: ignore
+                handle_test_case)
+            try:
+                f()
+            finally:
+                flush()
+
+        return wrapper
+
+    return decorator
