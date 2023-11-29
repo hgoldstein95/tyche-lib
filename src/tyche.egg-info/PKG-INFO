@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: tyche
-Version: 0.0.1
+Version: 0.0.2
 Summary: A python library for use with the Tyche VSCode extension.
 Author-email: Harrison Goldstein <hgoldstein95@gmail.com>
 Project-URL: Homepage, https://github.com/hgoldstein95/tyche-lib
@@ -12,4 +12,7 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: coverage
 
-# tyche-lib
+# Tyche Shim for Hypothesis
+
+This library connects Hypothesis tests to the [Tyche](https://github.com/tyche-pbt/tyche-extension)
+extension for Visual Studio Code.
