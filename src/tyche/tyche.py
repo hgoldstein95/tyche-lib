@@ -1,62 +1,67 @@
+import atexit
 import json
-import os
-import time
+import threading
 import hypothesis
 import websocket
 
 PORT = 8181
-OUTPUT_FILE = lambda property: f".tyche/{property}.jsonl"
+POLLING_INTERVAL_SECONDS = 1
 
 
-def visualize(write_to_websocket=True, write_to_file=False):
+# Adapted from https://stackoverflow.com/questions/3393612/run-certain-code-every-n-seconds
+class RepeatedTimer(object):
 
-    def decorator(f):
+    def __init__(self, interval, function, *args, **kwargs):
+        self._timer = None
+        self.interval = interval
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.is_running = False
+        self.start()
 
-        def wrapper(*args, **kwargs):
-            global queue
-            global last_flush
+    def _run(self):
+        self.is_running = False
+        self.start()
+        self.function(*self.args, **self.kwargs)
 
-            queue = []
-            last_flush = time.time()
+    def start(self):
+        if not self.is_running:
+            self._timer = threading.Timer(self.interval, self._run)
+            self._timer.daemon = True
+            self._timer.start()
+            self.is_running = True
 
-            # Flush queue to file, websocket, or both
-            def flush():
-                global queue
-                global last_flush
+    def stop(self):
+        if self._timer is not None:
+            self._timer.cancel()
+        self.is_running = False
 
-                result = "\n".join(json.dumps(line) for line in queue) + "\n"
 
-                if write_to_websocket:
-                    ws = websocket.create_connection(f"ws://localhost:{PORT}")
-                    ws.send(result)
-                    ws.close()
+class TycheManager:
 
-                if write_to_file:
-                    fname = OUTPUT_FILE(
-                        f.__name__) if callable(OUTPUT_FILE) else OUTPUT_FILE
-                    os.makedirs(os.path.dirname(fname), exist_ok=True)
-                    with open(fname, "a") as handle:
-                        handle.write(result)
+    def __init__(self):
+        self._queue = []
+        self._connection = websocket.create_connection(
+            f"ws://localhost:{PORT}")
+        atexit.register(self._cleanup)
+        self._timer = RepeatedTimer(POLLING_INTERVAL_SECONDS, self._flush)
 
-                last_flush = time.time()
-                queue = []
+    def _cleanup(self):
+        self._timer.stop()
+        self._flush()
+        self._connection.close()
 
-            # Add a test case to the queue and potentially flush
-            def handle_test_case(test_case):
-                global queue
-                global last_unflushed
+    def _flush(self):
+        result = "\n".join(json.dumps(line) for line in self._queue) + "\n"
+        self._connection.send(result)
+        self._queue = []
 
-                queue.append(test_case)
-                if time.time() - last_flush > 1:
-                    flush()
+    def enqueue(self, test_case):
+        self._queue.append(test_case)
 
-            hypothesis.internal.observability.TESTCASE_CALLBACKS.append(  # type: ignore
-                handle_test_case)
-            try:
-                f()
-            finally:
-                flush()
 
-        return wrapper
+manager = TycheManager()
 
-    return decorator
+hypothesis.internal.observability.TESTCASE_CALLBACKS.append(  # type: ignore
+    manager.enqueue)
